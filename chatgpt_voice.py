@@ -1,7 +1,6 @@
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
-import time
 import speech_recognition as sr
 import pyttsx3
 import numpy as np
@@ -10,18 +9,17 @@ from playsound import playsound
 
 language = 'en'
 
-api_key= os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key = api_key)
+api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=api_key)
 
 # Set up the speech recognition and text-to-speech engines
 r = sr.Recognizer()
 
-tts_engine = 'pyttsx3'  # select from 'gtts', 'pyttsx3', 'openai'
+tts_engine = 'gtts'  # select from 'gtts', 'pyttsx3', 'openai'
 
-if tts_engine == 'pyttsx3':
-    engine = pyttsx3.init()
-    voice = engine.getProperty('voices')[2]
-    engine.setProperty('voice', voice.id)
+engine = pyttsx3.init()
+voice = engine.getProperty('voices')[2]
+engine.setProperty('voice', voice.id)
 
 
 def get_completion(messages, model="gpt-3.5-turbo-0125"):
@@ -40,17 +38,18 @@ model = 'gpt-3.5-turbo'
 name = "Arjun"
 greetings = [f"whats up master {name}",
              "yeah?",
-             "Well, hello there, Master of Puns and Jokes - how's it going today?",
+             "Well, hello there! How's it going today?",
              f"Ahoy there, Captain {name}! How's the ship sailing?",
-             f"Bonjour, Monsieur {name}! Comment ça va? Wait, why the hell am I speaking French?" ]
+             "How can I help?",
+             "How's it going my man!"]
+#             f"Bonjour, Monsieur {name}! Comment ça va? Wait, why the hell am I speaking French?"]
 
 messages = []
 # Listen for the wake word "hey pos"
 def listen_for_wake_word(source):
     # Setup the system message for the GPT
-    messages = []
-    messages.append({"role": "system",
-                 "content": "You are a helpful personal assistant. Try to answer the questions in 100 words or less"})
+    messages = [{"role": "system",
+                 "content": "You are a helpful personal assistant. Try to answer the questions in 100 words or less"}]
 
     print("Listening for 'Hello'...")
 
@@ -60,20 +59,26 @@ def listen_for_wake_word(source):
             text = r.recognize_google(audio)
             if "hello" in text.lower():
                 print("Wake word detected.")
-                engine.say(np.random.choice(greetings))
-                engine.runAndWait()
-                listen_and_respond(source, )
+                if tts_engine == 'pyttsx3':
+                    engine.say(np.random.choice(greetings))
+                    engine.runAndWait()
+                else:
+                    greet = gTTS(text=np.random.choice(greetings), lang=language)
+                    greet.save('response.mp3')
+                    playsound('response.mp3')
+
+                listen_and_respond(source,messages)
                 break
         except sr.UnknownValueError:
             pass
         
 
 # Listen for input and respond with OpenAI API
-def listen_and_respond(source):
+def listen_and_respond(source, messages):
     playsound("listen_chime.mp3")
     while True:
         print("Listening...")
-        audio = r.listen(source)
+        audio = r.listen(source, timeout=5)
         try:
             text = r.recognize_google(audio)
             print(f"You said: {text}")
@@ -81,6 +86,7 @@ def listen_and_respond(source):
                 continue
 
             messages.append({'role':'user', 'content':text})
+
             # Send input to OpenAI API
             response_text = get_completion(messages)
             print(response_text)
@@ -90,8 +96,8 @@ def listen_and_respond(source):
                 engine.runAndWait()
 
             elif tts_engine == 'gtts':
-                myobj = gTTS(text=response_text, lang=language, slow=False)
-                myobj.save('response.mp3')
+                resp = gTTS(text=response_text, lang=language)
+                resp.save('response.mp3')
                 playsound('response.mp3')
 
             elif tts_engine == 'openai':
@@ -115,9 +121,9 @@ def listen_and_respond(source):
                 playsound("error.mp3")
                 print("test")
                 listen_for_wake_word(source)
+
         except sr.UnknownValueError:
             playsound("error.mp3")
-            time.sleep(2)
             print("Silence found, shutting up, listening...")
             listen_for_wake_word(source)
             break
