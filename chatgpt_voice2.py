@@ -1,5 +1,5 @@
 import os
-import openai
+import google.generativeai as genai
 from dotenv import load_dotenv
 import time
 import speech_recognition as sr
@@ -12,10 +12,10 @@ language = 'en'
 # from os.path import join, dirname
 # import matplotlib.pyplot as plt
 # ^ matplotlib is great for visualising data and for testing purposes but usually not needed for production
-openai.api_key=''
+genai.configure(api_key=os.environ["AIzaSyDJW-e_IAn4XESJQUqYYQe1qZ-UvVxlNMI"])
 load_dotenv()
-model = 'gpt-3.5-turbo'
-model = 'gpt-4'
+model = genai.GenerativeModel('gemini-1.5-flash')
+
 # Set up the speech recognition and text-to-speech engines
 r = sr.Recognizer()
 engine = pyttsx3.init("dummy")
@@ -53,8 +53,8 @@ def listen_and_respond(source):
             if not text:
                 continue
             # Send input to OpenAI API
-            response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=[{"role": "user", "content": f"{text}"}])
-            response_text = response.choices[0].message.content
+            response = model.generate_content(text)
+            response_text = response.text
             print(response_text)
             print("generating audio")
             myobj = gTTS(text = response_text, lang = language, slow = False)
